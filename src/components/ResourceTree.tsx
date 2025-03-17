@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from "@/lib/utils";
 import { CVETable } from './CVETable';
@@ -25,19 +25,16 @@ const mockData: ResourceNode = {
   id: '1',
   name: 'Billing',
   type: 'service',
-  hidden: true,
   children: [
     {
       id: '2',
       name: 'Invoicing',
       type: 'application',
-      hidden: true,
       children: [
         {
           id: '3',  
           name: 'Production',
           type: 'environment',
-          hidden: true,
           children: [
             {
               id: '4',
@@ -150,7 +147,6 @@ const mockData: ResourceNode = {
           id: '13',
           name: 'Staging',
           type: 'environment',
-          hidden: true,
           children: [
             {
               id: '14',
@@ -218,7 +214,6 @@ const mockData: ResourceNode = {
           id: '20',
           name: 'Development',
           type: 'environment',
-          hidden: true,
           children: [
             {
               id: '21',
@@ -288,7 +283,6 @@ const mockData: ResourceNode = {
       id: '27',
       name: 'Payments',
       type: 'application',
-      hidden: true
     }
   ]
 };
@@ -302,26 +296,23 @@ const ResourceNodeComponent: React.FC<{
   const isExpanded = expanded.has(node.id);
   const hasChildren = node.children && node.children.length > 0;
   
-  // Don't render hidden nodes
-  if (node.hidden) {
-    // But render their children if expanded
-    if (isExpanded && hasChildren) {
-      return (
-        <div>
-          {node.children!.map((child) => (
-            <ResourceNodeComponent
-              key={child.id}
-              node={child}
-              depth={depth}
-              expanded={expanded}
-              onToggle={onToggle}
-            />
-          ))}
-        </div>
-      );
+  // Style for each node type to make the hierarchy more visually distinct
+  const getNodeStyles = () => {
+    switch(node.type) {
+      case 'service':
+        return "font-semibold text-blue-600 dark:text-blue-400";
+      case 'application':
+        return "font-medium text-purple-600 dark:text-purple-400";
+      case 'environment':
+        return "font-medium text-green-600 dark:text-green-400";
+      case 'resourceType':
+        return "font-medium";
+      case 'resource':
+        return "text-slate-700 dark:text-slate-300";
+      default:
+        return "";
     }
-    return null;
-  }
+  };
 
   return (
     <div>
@@ -342,7 +333,14 @@ const ResourceNodeComponent: React.FC<{
             )
           )}
         </div>
-        <span className="text-sm text-slate-900 dark:text-white">{node.name}</span>
+        <span className={cn("text-sm", getNodeStyles())}>{node.name}</span>
+        
+        {/* Add badge for resource nodes with CVEs */}
+        {node.type === 'resource' && node.cveInfo && node.cveInfo.length > 0 && (
+          <span className="ml-2 px-1.5 py-0.5 text-xs bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 rounded-full">
+            {node.cveInfo.length}
+          </span>
+        )}
       </div>
 
       {isExpanded && (
@@ -368,7 +366,7 @@ const ResourceNodeComponent: React.FC<{
 };
 
 export function ResourceTree() {
-  // Initially expand Container, VM, and Serverless nodes
+  // Initially expand service, application, and resource type nodes (Containers, VMs, Serverless)
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['1', '2', '3', '4', '7', '10']));
 
   const toggleNode = (id: string) => {
@@ -384,7 +382,10 @@ export function ResourceTree() {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
       <div className="p-4 border-b border-slate-200 dark:border-slate-800">
-        <h2 className="text-lg font-semibold">Cloud Resource Inspector</h2>
+        <div className="flex items-center gap-2">
+          <Shield className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+          <h2 className="text-lg font-semibold">Cloud Resource Inspector</h2>
+        </div>
         <p className="text-sm text-slate-500">Discover and manage cloud resources vulnerabilities</p>
       </div>
       <ResourceNodeComponent
